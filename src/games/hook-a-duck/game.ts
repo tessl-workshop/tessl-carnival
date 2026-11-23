@@ -71,13 +71,21 @@ export function duckPosition(duck: Duck, time: number): { x: number; y: number }
   };
 }
 
-/** The duck still on the stream nearest the point, if one is within CATCH_RADIUS. */
-export function duckAt(state: HookADuckState, x: number, y: number): Duck | undefined {
+/**
+ * The duck still on the stream nearest the point at this time, if one is
+ * within CATCH_RADIUS.
+ */
+export function duckAt(
+  state: HookADuckState,
+  x: number,
+  y: number,
+  time = state.time,
+): Duck | undefined {
   let nearest: Duck | undefined;
   let nearestDistance = CATCH_RADIUS;
   for (const duck of state.ducks) {
     if (duck.caught) continue;
-    const position = duckPosition(duck, state.time);
+    const position = duckPosition(duck, time);
     const distance = Math.hypot(x - position.x, y - position.y);
     if (distance <= nearestDistance) {
       nearest = duck;
@@ -100,13 +108,16 @@ export function castHook(state: HookADuckState, x: number, y: number): boolean {
 
 /** Advances the game by `dt` seconds. */
 export function step(state: HookADuckState, dt: number): void {
+  const start = state.time;
   state.time += dt;
 
   const cast = state.cast;
   if (cast) {
+    // The hook can land partway through the frame; look for a duck there.
+    const landing = start + (1 - cast.t) * CAST_TIME;
     cast.t += dt / CAST_TIME;
     if (cast.t >= 1) {
-      const duck = duckAt(state, cast.x, cast.y);
+      const duck = duckAt(state, cast.x, cast.y, landing);
       if (duck) {
         duck.caught = true;
         state.catches.push(duck.points);

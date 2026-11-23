@@ -76,6 +76,19 @@ describe('hook a duck', () => {
     expect(state.lastCatch).toBe(0);
   });
 
+  it('checks for a duck at the moment the hook lands, not at the end of the frame', () => {
+    const state = createState();
+    const duck = state.ducks[3];
+    const where = duckPosition(duck, CAST_TIME);
+    castHook(state, where.x + CATCH_RADIUS - 1, where.y);
+    // 32 frames of 0.016s cross the landing time and end at 0.512s, when the
+    // duck has floated out of reach.
+    for (let i = 0; i < 32; i++) step(state, 0.016);
+    expect(duck.caught).toBe(true);
+    expect(state.score).toBe(duck.points);
+    expect(state.time).toBeCloseTo(0.512);
+  });
+
   it('scores nothing until the hook reaches the water', () => {
     const state = createState();
     const where = duckPosition(state.ducks[0], 0);
